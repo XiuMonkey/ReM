@@ -1,1 +1,2 @@
 A developing Minecraft launcher of C and C++(WIN32 API).Can be runned on Windows 8 or later Windows.We will rebuild a another version of Qt to adapt more system.
+It includes several parts:CJson.h(a lib to analyse .json file),main.cpp(the file includes main logic of the project),Window_Class.h(the head file of the definations of diverse window class),Function.h(includes the definations of several necessary functions) and LaunchCore.h(a file in order to execute the method to launch game)
