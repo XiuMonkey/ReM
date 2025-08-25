@@ -1,4 +1,5 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
+﻿#pragma once
+#define _CRT_SECURE_NO_WARNINGS
 #define VALUE 1
 #undef UNICODE
 #undef _UNICODE
@@ -14,7 +15,7 @@
 #include <float.h>
 #include <limits.h>
 #include <ctype.h>
-#include "CJson.h"
+#include "Function.h"
 string Rootpath;
 vector<string>versions;//定义版本数组
 
@@ -65,7 +66,6 @@ public:
 	string Memory;
 	string JavaPath;
 	int LaunchGame() {
-		vector<string>versions;//定义版本数组
 		char* json_string;//保存游戏json的字符串，也是库地址的储存地方
 		json_string= (char*)malloc(70000);
 		strcpy(json_string, "");
@@ -162,14 +162,14 @@ public:
 		strcat(strcat(Launch, RootPath), "\\.minecraft\\assets\" --assetIndex ");
 		strcat(Launch, AIID);
 		strcat(Launch, " --uuid 15468a55d6633077a691aed0be0ffacf --accessToken 60752adf5e3149a3b1cf571c01f81a5f --userProperties {} --userType mojang --width 854 --height 480");
-		FILE* pBat = fopen("data/Launch.bat", "w");
+		FILE* pBat = fopen("data/Launch.bat", "w");//写入dat
 		fwrite(Launch, strlen(Launch), 1, pBat);
 		fclose(pBat);
-		ShellExecute(NULL, L"open", C2W(strcat(RootPath,"\\data\\Launch.bat")), NULL, NULL, SW_HIDE);
-		cout << "";//在这个项目里面必须有一个cout，我也不知为啥，不然报错(或者cin等)
+		ShellExecute(NULL, L"open", C2WS(strcat(RootPath,"\\data\\Launch.bat")), NULL, NULL, SW_SHOW);//运行dat
+		//cout << "";//在这个项目里面必须有一个cout，我也不知为啥，不然报错(或者cin等)
 		free(json_string);
 		free(d);
-		free(name);
+		free(name);//释放掉该释放的
 		return 0;
 	}
 };

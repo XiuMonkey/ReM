@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="CJson.h">
+      <Filter>Lib</Filter>
+    </ClInclude>
+    <ClInclude Include="Function.h">
+      <Filter>Lib</Filter>
+    </ClInclude>
+    <ClInclude Include="LauncherCore.h">
+      <Filter>Lib</Filter>
+    </ClInclude>
+    <ClInclude Include="PaintingFunction.h">
+      <Filter>Lib</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows_Class.h">
+      <Filter>Lib</Filter>
+    </ClInclude>
+    <ClInclude Include="debug.h">
+      <Filter>Lib</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\LOGO.ico" />
+    <Image Include="res\back.jpg">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\back2.png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\border.png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\Destroy.png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\Download.png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\Download2.jpg">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\Editor .png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\Editor2.png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\GoBack.png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\launch_main.png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\launch_main2.png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\Min.png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\tag2.png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\tag.png">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\logo.png">
+      <Filter>res</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="res">
+      <UniqueIdentifier>{dd6b30a9-1100-4cb5-8834-e514acc7fb32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib">
+      <UniqueIdentifier>{487fa3fc-7fa1-4c6b-a3c7-23e9836c977b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="res\Click.mp3">
+      <Filter>res</Filter>
+    </Media>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\log4j-patch-agent-1.0.jar">
+      <Filter>res</Filter>
+    </None>
+  </ItemGroup>
+</Project>

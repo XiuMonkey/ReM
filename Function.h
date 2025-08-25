@@ -1,3 +1,4 @@
+#pragma once
 
 #include <unzip.h>
 #include <zconf.h>
@@ -6,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <strsafe.h>
+#include <algorithm>
 #include "CJson.h"
 #define WM_PLAYMUSIC (WM_USER+100)
 using namespace std;
@@ -15,10 +17,10 @@ extern HINSTANCE hInst;
 extern HDC mHDC;
 extern HWND JPE;
 extern WNDPROC oldDEProc;
+extern cJSON* DataJS;
 extern void OnPaintJPE();
-cJSON *DataJS;
 
-char* W2C(LPWSTR lpwszStrIn)
+char* WS2C(LPWSTR lpwszStrIn)
 {
 	LPSTR pszOut = NULL;
 	try
@@ -44,7 +46,7 @@ char* W2C(LPWSTR lpwszStrIn)
 
 	return pszOut;
 }
-LPWSTR C2W(char* asciiString) {
+LPWSTR C2WS(char* asciiString) {
 
 	// 获取需要的缓冲区大小
 	int bufferSize = MultiByteToWideChar(CP_UTF8, 0, asciiString, -1, NULL, 0);
@@ -57,7 +59,7 @@ LPWSTR C2W(char* asciiString) {
 
 	return wideString;
 }
-LPWSTR S2W(std::string str)
+LPWSTR S2WS(std::string str)
 {
 	size_t size = str.length();
 	int wLen = ::MultiByteToWideChar(CP_UTF8,
@@ -84,9 +86,9 @@ string WS2S(wstring wstr)
 	delete[] buffer;
 	return result;
 }
-std::wstring GetClipboardText()
+wstring GetClipboardText()
 {
-	std::wstring clipboardText;
+	wstring clipboardText;
 
 	// 打开剪切板
 	if (OpenClipboard(nullptr))
@@ -114,7 +116,7 @@ std::wstring GetClipboardText()
 }
 BOOL FreeMyResource(UINT uiResouceName, char* lpszResourceType, char* lpszSaveFileName)
 {
-	HRSRC hRsrc = ::FindResource(GetModuleHandle(NULL), MAKEINTRESOURCE(uiResouceName), C2W(lpszResourceType));
+	HRSRC hRsrc = ::FindResource(GetModuleHandle(NULL), MAKEINTRESOURCE(uiResouceName), C2WS(lpszResourceType));
 	LPTSTR szBuffer = new TCHAR[1024];
 	if (hRsrc == NULL)
 	{
@@ -151,6 +153,7 @@ void playclick2() {
 
 }//播放按钮声音
 
+/*
 bool unzipCurrentFile(unzFile uf, const char* destFolder)
 {
 	char szFilePath[512];
@@ -217,6 +220,7 @@ bool unzipCurrentFile(unzFile uf, const char* destFolder)
 	fclose(file);
 	return true;
 }
+
 bool unzipFile(std::string zipFileName, std::string goalPath)
 {
 	unzFile uf = unzOpen64(zipFileName.c_str());
@@ -254,8 +258,10 @@ bool unzipFile(std::string zipFileName, std::string goalPath)
 	unzClose(uf);
 	return true;
 }
+*/
 
-void WriteInJson(string key,string value) {
+
+void WriteInJson(string key, string value) {
 	if (cJSON_GetObjectItem(DataJS, key.c_str()) == NULL) {
 		cJSON_AddItemToObject(DataJS, key.c_str(), cJSON_CreateString(value.c_str()));
 	}
@@ -263,9 +269,16 @@ void WriteInJson(string key,string value) {
 		cJSON_ReplaceItemInObject(DataJS, key.c_str(), cJSON_CreateString(value.c_str()));
 	}
 	FILE* file = fopen("data\\data.json", "w");
-	fwrite(cJSON_Print(DataJS), strlen(cJSON_Print(DataJS)),1,file);
+	fwrite(cJSON_Print(DataJS), strlen(cJSON_Print(DataJS)), 1, file);
 	fclose(file);
 }
 
-
+string GetImageSuffix(string mStr) {
+	string mStr2="";
+	mStr2 += mStr[mStr.size()-3];
+	mStr2 += mStr[mStr.size() - 2];
+	mStr2 += mStr[mStr.size() - 1];
+	transform(mStr2.begin(), mStr2.end(), mStr2.begin(), ::toupper);
+	return mStr2;
+}
 

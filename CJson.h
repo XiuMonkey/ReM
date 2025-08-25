@@ -19,8 +19,6 @@
 #include <ctype.h>
 using namespace std;
 
-#ifndef cJSON__h
-#define cJSON__h
 #pragma once
 #ifdef __cplusplus
 extern "C"
@@ -145,7 +143,7 @@ extern "C"
 }
 #endif
 
-#endif
+
 #pragma region cJON–≈œ¢
 static const char* ep;
 
@@ -870,4 +868,6 @@ void cJSON_Minify(char* json)
 	}
 	*into = 0;	/* and null-terminate. */
 }
+
+
 #pragma endregion

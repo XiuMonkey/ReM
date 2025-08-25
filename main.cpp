@@ -1,4 +1,3 @@
-
 #define _CRT_SECURE_NO_WARNINGS
 #include <thread>  
 #include <windows.h>
@@ -9,18 +8,19 @@
 #include <direct.h>
 #include <shlwapi.h>
 #include <direct.h>
-#include "PaintingFunction.h"
-#include "LauncherCore.h"
 #include "resource.h"
-#include "wincodec.h"
+#include "Windows_Class.h"
 #include <dwrite.h>
 #include <mmsystem.h>//播放音频
 #pragma comment(lib, "winmm.lib")//播放音频
 #pragma comment(lib,"Windowscodecs.lib")
 #pragma comment(lib,"Shlwapi.lib")
-#pragma comment(lib,"zlibstatic.lib")
+
 #define LAUNCH 150
 #define SHIFT 151
+#define Setting 2
+#define Normal 0
+#define Focus 1
 #pragma region 变量声明
 int mbnum2 = 0;
 int isCurInDestroy = 0;
@@ -38,8 +38,6 @@ HWND mLOGO;
 HWND DestroyButton;
 HWND MinButton;
 HWND GoBackButton;
-HWND JPETag;
-HWND IDETag;
 HWND IDE;
 HWND JPE;
 WNDPROC oldDEProc;
@@ -48,28 +46,23 @@ HINSTANCE hInst;
 HFONT hFont;
 HFONT hFont2;
 HFONT hFont3;
+cJSON* DataJS;
+
+TagWin cJPETag(0,TEXT("JPETag"), NULL, WS_CHILD | WS_VISIBLE | WS_EX_TOPMOST,{ 250, 33, 64, 32 }, L"JAVA路径  ",2,6);
+TagWin cIDETag(0, TEXT("IDETag"), NULL, WS_CHILD | WS_VISIBLE | WS_EX_TOPMOST, { 10, 230, 64, 32 }, L" 游戏ID   ", 8, 6);
 
 #pragma endregion
 
 #pragma region OnPaint函数定义
-inline void minWin() {
-	ShowWindow(MainWin, 0);
-	ShowWindow(GoBackButton, 0);
-	ShowWindow(mBorder, 0);
-	ShowWindow(LaunchButton, 0);
-	ShowWindow(DownloadButton, 0);
-	ShowWindow(SettingButton, 0);
-	ShowWindow(IDETag, 0);
-}
- inline void OnPaintBack() {
+inline void OnPaintBack() {
 	ShowWindow(mBorder, SW_SHOW);
 	ShowWindow(LaunchButton, SW_SHOW);
 	ShowWindow(DownloadButton, SW_SHOW);
 	ShowWindow(SettingButton, SW_SHOW);
 	ShowWindow(GoBackButton, SW_HIDE);
-	ShowWindow(JPETag, SW_HIDE);
+	cJPETag.HideWin();
 	ShowWindow(JPE, SW_HIDE);
-	ShowWindow(IDETag, SW_SHOW);
+	cIDETag.ShowWin();
 	ShowWindow(IDE, SW_SHOW);
 	DrawPic(MainWin, 810, 540, BACK, "JPG");
 }
@@ -79,19 +72,19 @@ inline void OnPaintBack2() {
 	ShowWindow(LaunchButton, SW_HIDE);
 	ShowWindow(DownloadButton, SW_HIDE);
 	ShowWindow(SettingButton, SW_HIDE);
-	ShowWindow(IDETag, SW_HIDE);
+	cIDETag.HideWin();
 	ShowWindow(IDE, SW_HIDE);
 	DrawPic(MainWin, 810, 540, BACK2, "PNG");
 }
 inline void OnPaintBackSetting() {
-	ShowWindow(JPETag, SW_SHOW);
+	cJPETag.ShowWin();
 	ShowWindow(JPE, SW_SHOW);
 	ShowWindow(GoBackButton, SW_SHOW);
 	ShowWindow(mBorder, SW_SHOW);
 	ShowWindow(LaunchButton, SW_HIDE);
 	ShowWindow(DownloadButton, SW_HIDE);
 	ShowWindow(SettingButton, SW_HIDE);
-	ShowWindow(IDETag, SW_HIDE);
+	cIDETag.HideWin();
 	ShowWindow(IDE, SW_HIDE);
 	DrawPic(MainWin, 810, 540, BACK2, "PNG");
 }
@@ -137,11 +130,73 @@ inline void OnPaintJPE() {
 inline void OnPaintIDE() {
 	DrawPic(IDE, 210, 40, IDEBack, "PNG");
 }
-inline void OnPaintJPETag() {
-	DrawPic(JPETag, 64, 32, mTag, "PNG");
+
+inline void OnPaint(HWND hd,int state) {
+	if (hd == MainWin) {
+		if (state == 0) {
+			OnPaintBack();
+		}
+		else if (state == 1) {
+			OnPaintBack2();
+		}
+		else if (state == Setting) {
+			OnPaintBackSetting();
+		}
+	}
+	else if (hd == mBorder) {
+		OnPaintBorder();
+	}
+	else if (hd == LaunchButton) {
+		if (state == Normal) {
+			OnPaintLaunchNormal();
+		}
+		else {
+			OnPaintLaunchFocus();
+		}
+	}
+	else if (hd == DownloadButton) {
+		OnPaintDownload();
+	}
+	else if (hd == SettingButton) {
+		OnPaintSetting();
+	}
+	else if (hd == mLOGO) {
+		OnPaintLOGO();
+	}
+	else if (hd == DestroyButton) {
+		if (state == Normal) {
+			OnPaintDestroyNormal();
+		}
+		else {
+			OnPaintDestroyFocus();
+		}
+	}
+	else if (hd == MinButton) {
+		if (state == Normal) {
+			OnPaintMinNormal();
+		}
+		else {
+			OnPaintMinFocus();
+		}
+	}
+	else if (hd == GoBackButton) {
+		if (state == Normal) {
+			OnPaintGoBackNormal();
+		}
+		else {
+			OnPaintGoBackFocus();
+		}
+	}
+	else if (hd == JPE) {
+		OnPaintJPE;
+	}
+	else if (hd == IDE) {
+		OnPaintIDE();
+	}
 }
-inline void OnPaintIDETag() {
-	DrawPic(IDETag, 64, 32, mTag2, "PNG");
+inline void CreateThreadOnPaint(HWND hd, int state) {
+	thread thr = thread(OnPaint, hd, state);
+	thr.detach();
 }
 #pragma endregion
 
@@ -156,6 +211,7 @@ LRESULT CALLBACK DownloadProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPa
 	tme.dwHoverTime = HOVER_DEFAULT;
 	tme.hwndTrack = hwnd;
 	PAINTSTRUCT ps;
+	thread tt1;
 	switch (Message)
 	{
 	case WM_MOUSEMOVE:
@@ -170,12 +226,11 @@ LRESULT CALLBACK DownloadProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPa
 	case WM_PAINT:
 		if (mbnum2==0){
 			mHDC = BeginPaint(DownloadButton, &ps);
-			OnPaintDownload();
+			CreateThreadOnPaint(hwnd,0);
 			EndPaint(DownloadButton, &ps);
 			SetLayeredWindowAttributes(DownloadButton, RGB(0, 0, 0), 1, LWA_COLORKEY | LWA_ALPHA);
 		}
 		else{
-			mHDC = BeginPaint(DownloadButton, &ps);
 			SetLayeredWindowAttributes(DownloadButton, RGB(0, 0, 0), 130, LWA_COLORKEY | LWA_ALPHA);
 		}
 		break;
@@ -204,7 +259,6 @@ LRESULT CALLBACK SettingProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 	tme.dwHoverTime = HOVER_DEFAULT;
 	tme.hwndTrack = hwnd;
 	PAINTSTRUCT ps;
-	LONG x;
 	switch (Message)
 	{
 	case WM_MOUSEMOVE:
@@ -219,13 +273,13 @@ LRESULT CALLBACK SettingProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 	case WM_PAINT:
 		if (mbnum2 == 0) {
 			mHDC = BeginPaint(SettingButton, &ps);
-			OnPaintSetting();
+			CreateThreadOnPaint(hwnd, 0);
 			EndPaint(SettingButton, &ps);
 			SetLayeredWindowAttributes(SettingButton, RGB(0, 0, 0), 1, LWA_COLORKEY | LWA_ALPHA);
 		}
 		else {
 			mHDC = BeginPaint(SettingButton, &ps);
-			OnPaintSetting();
+			CreateThreadOnPaint(hwnd, 1);
 			EndPaint(SettingButton, &ps);
 			SetLayeredWindowAttributes(SettingButton, RGB(0, 0, 0), 130, LWA_COLORKEY | LWA_ALPHA);
 		}
@@ -256,7 +310,7 @@ LRESULT CALLBACK mBorderProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 		ShowWindow(mBorder, SW_HIDE);
 		ShowWindow(mBorder, SW_SHOW);
 		mHDC = BeginPaint(mBorder, &ps);
-		OnPaintBorder();
+		CreateThreadOnPaint(hwnd, 0);
 		EndPaint(mBorder, &ps);
 		break;
 	case  WM_LBUTTONDOWN:
@@ -328,7 +382,7 @@ LRESULT CALLBACK LaunchProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 		FreeMyResource(IDR_MP31, "MP3", "data//01//Click.mp3");
 		if (CursorIsInLaunch == 0) {
 			mHDC = BeginPaint(LaunchButton, &ps);
-			OnPaintLaunchNormal();
+			CreateThreadOnPaint(hwnd,0);
 			EndPaint(LaunchButton, &ps);
 			if (CursorIsFirstPaintCount < 1) {
 				CursorIsFirstPaintCount++;
@@ -340,7 +394,7 @@ LRESULT CALLBACK LaunchProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 		else {
 			PostMessage(mLOGO, WM_PLAYMUSIC, NULL, NULL);
 			mHDC = BeginPaint(LaunchButton, &ps);
-			OnPaintLaunchFocus();
+			CreateThreadOnPaint(hwnd, 1);
 			EndPaint(LaunchButton, &ps);
 		}
 		break;
@@ -384,7 +438,6 @@ LRESULT CALLBACK mDestroyProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPa
 	tme.dwHoverTime = HOVER_DEFAULT;
 	tme.hwndTrack = hwnd;
 	PAINTSTRUCT ps;
-	LONG x;
 	switch (Message){
 	case WM_MOUSEMOVE:
 		TrackMouseEvent(&tme);
@@ -487,12 +540,12 @@ LRESULT CALLBACK GoBackProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
 	case WM_PAINT:
 		if (isCurInGoBack == 0) {
 			mHDC = BeginPaint(GoBackButton, &ps);
-			OnPaintGoBackNormal();
+			CreateThreadOnPaint(hwnd, 0);
 			EndPaint(GoBackButton, &ps);
 		}
 		else {
 			mHDC = BeginPaint(GoBackButton, &ps);
-			OnPaintGoBackFocus();
+			CreateThreadOnPaint(hwnd, 1);
 			EndPaint(GoBackButton, &ps);
 		}
 		break;
@@ -680,48 +733,6 @@ LRESULT CALLBACK IDEProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 	return 0;
 }
 
-LRESULT CALLBACK JPETagProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
-	PAINTSTRUCT ps;
-	switch (Message) {
-	case WM_PAINT:
-		mHDC = BeginPaint(JPETag, &ps);
-		SelectObject(mHDC, hFont3);
-		OnPaintJPETag();
-
-		SetBkMode(mHDC, TRANSPARENT);
-		TextOut(mHDC, 2, 6, L"JAVA路径  ", 9);
-		EndPaint(JPETag, &ps);
-		break;
-	case WM_ERASEBKGND:
-		return TRUE;
-	default:
-		return DefWindowProc(hwnd, Message, wParam, lParam);   //让系统处理消息，这条语句一定要加上
-	}
-	return 0;
-}
-
-LRESULT CALLBACK IDETagProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
-
-	PAINTSTRUCT ps;
-	switch (Message) {
-	case WM_PAINT:
-		mHDC = BeginPaint(IDETag, &ps);
-		SelectObject(mHDC, hFont2);
-		OnPaintIDETag();
-
-		SetBkMode(mHDC, TRANSPARENT);
-		SetBkColor(mHDC, RGB(41, 239, 228));
-		TextOut(mHDC, 8, 6, L"游戏ID   ", 8);
-		EndPaint(IDETag, &ps);
-		break;
-	case WM_ERASEBKGND:
-		return TRUE;
-	default:
-		return DefWindowProc(hwnd, Message, wParam, lParam);   //让系统处理消息，这条语句一定要加上
-	}
-	return 0;
-}
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msgID, WPARAM wParam, LPARAM lParam);
 
 int c = 1;
@@ -765,11 +776,8 @@ int CALLBACK WinMain(HINSTANCE hIns, HINSTANCE hPreIns, LPSTR lpCmdLine, int nCm
 	wc.lpfnWndProc = GoBackProc;
 	wc.lpszClassName = TEXT("GoBack");
 	RegisterClass(&wc);
-	wc.lpfnWndProc = JPETagProc;
-	wc.lpszClassName = TEXT("JPETag");
-	RegisterClass(&wc);
-	wc.lpfnWndProc = IDETagProc;
-	wc.lpszClassName = TEXT("IDETag");
+	cJPETag.RegWin();
+	cIDETag.RegWin();
 	RegisterClass(&wc);
 	wc.lpfnWndProc = JPEProc;
 	wc.lpszClassName = TEXT("JPE");
@@ -785,6 +793,10 @@ int CALLBACK WinMain(HINSTANCE hIns, HINSTANCE hPreIns, LPSTR lpCmdLine, int nCm
 	_mkdir("data\\02");
 	FreeMyResource(IDR_JAR1, "JAR", "data\\02\\log4j-patch-agent-1.0.jar");
 	MainWin = CreateWindow(L"main", L"ReM Alpha1.0", WS_CLIPCHILDREN | WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX| WS_BORDER| WS_EX_LAYERED| WS_EX_COMPOSITED, 200, 300,810,540, NULL, NULL, hIns, NULL);//创建主窗口
+
+	//SetWindowLong(MainWin, GWL_EXSTYLE, GetWindowLong(MainWin, GWL_EXSTYLE) | WS_EX_LAYERED);
+	//SetLayeredWindowAttributes(MainWin, RGB(0, 0, 0), 255, LWA_COLORKEY | LWA_ALPHA);
+
 	WNDCLASS Bt = { 0 };
 	UpdateWindow(MainWin);
 	MSG nMsg = { 0 };
@@ -817,18 +829,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msgID, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_CREATE:
 #pragma region 各窗口初始化
-		D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &D2DFactory);
+		D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, &D2DFactory);
 		IDE = CreateWindowEx(0, TEXT("IDE"), NULL, WS_CHILD | WS_VISIBLE | WS_EX_TOPMOST, 10, 270, 210, 40, hWnd, (HMENU)(x++), hInst, NULL);
 		LaunchButton = CreateWindowEx(0, TEXT("LaunchButton"), NULL, WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_EX_TOOLWINDOW | WS_VISIBLE | WS_EX_LAYERED, 40, 410, 136, 80, hWnd, (HMENU)(x++), hInst, NULL);
 		DownloadButton = CreateWindowEx(0, TEXT("DownloadButton"), NULL, WS_CHILD | WS_VISIBLE, 240, 230, 106, 146, hWnd, (HMENU)(x++), hInst, NULL);
 		SettingButton = CreateWindowEx(0, TEXT("SettingButton"), NULL, WS_CHILD | WS_VISIBLE, 630, 320, 166, 146, hWnd, (HMENU)(x++), hInst, NULL);
 		mBorder = CreateWindowEx(0, TEXT("mBorder"), NULL, WS_CHILD | WS_VISIBLE, 00, 00, 810, 27, hWnd, (HMENU)(x++), hInst, NULL);
 		mLOGO = CreateWindowEx(0, TEXT("mLOGO"), NULL, WS_CHILD | WS_VISIBLE, 2, 0, 27, 27, hWnd, (HMENU)(x++), hInst, NULL);
-		DestroyButton = CreateWindowEx(0, TEXT("mDestroy"), NULL, WS_CHILD | WS_VISIBLE, 785, 2, 22, 23, hWnd, (HMENU)(x++), hInst, NULL);
-		MinButton = CreateWindowEx(0, TEXT("Min"), NULL, WS_CHILD | WS_VISIBLE | WS_EX_TOPMOST, 760, 2, 22, 23, hWnd, (HMENU)(x++), hInst, NULL);
+		DestroyButton = CreateWindowEx(0, TEXT("mDestroy"), NULL, WS_CHILD | WS_VISIBLE, 780, 2, 22, 23, hWnd, (HMENU)(x++), hInst, NULL);
+		MinButton = CreateWindowEx(0, TEXT("Min"), NULL, WS_CHILD | WS_VISIBLE | WS_EX_TOPMOST, 755, 2, 22, 23, hWnd, (HMENU)(x++), hInst, NULL);
 		GoBackButton = CreateWindowEx(0, TEXT("GoBack"), NULL, WS_CHILD | WS_VISIBLE | WS_EX_TOPMOST, 15, 30, 36, 36, hWnd, (HMENU)(x++), hInst, NULL);
-		JPETag = CreateWindowEx(0, TEXT("JPETag"), NULL, WS_CHILD | WS_VISIBLE | WS_EX_TOPMOST, 250, 33, 64, 32, hWnd, (HMENU)(x++), hInst, NULL);
-		IDETag = CreateWindowEx(0, TEXT("IDETag"), NULL, WS_CHILD | WS_VISIBLE | WS_EX_TOPMOST, 10, 230, 64, 32, hWnd, (HMENU)(x++), hInst, NULL);
+		cJPETag.CrtWin(hWnd, x);
+		cJPETag.SetPicturePaint(mTag, "PNG");
+		cIDETag.CrtWin(hWnd, x);
+		cIDETag.SetPicturePaint(mTag2, "PNG");
 		JPE= CreateWindowEx(0, TEXT("JPE"), NULL, WS_CHILD | WS_VISIBLE | WS_EX_TOPMOST, 250, 70, 540, 40, hWnd, (HMENU)(x++), hInst, NULL);
 
 		SetWindowLong(LaunchButton, GWL_EXSTYLE, GetWindowLong(LaunchButton, GWL_EXSTYLE) | WS_EX_LAYERED);
@@ -843,11 +857,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msgID, WPARAM wParam, LPARAM lParam)
 		SetWindowLong(mLOGO, GWL_EXSTYLE, GetWindowLong(mLOGO, GWL_EXSTYLE) | WS_EX_LAYERED);
 		SetLayeredWindowAttributes(mLOGO, RGB(255, 255, 255), 255, LWA_COLORKEY | LWA_ALPHA);
 
-		SetWindowLong(JPETag, GWL_EXSTYLE, GetWindowLong(JPETag, GWL_EXSTYLE) | WS_EX_LAYERED);
-		SetLayeredWindowAttributes(JPETag, RGB(255, 255, 255), 255, LWA_COLORKEY | LWA_ALPHA);
+		SetWindowLong(cJPETag.mHwnd, GWL_EXSTYLE, GetWindowLong(cJPETag.mHwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+		SetLayeredWindowAttributes(cJPETag.mHwnd, RGB(255, 255, 255), 255, LWA_COLORKEY | LWA_ALPHA);
 
-		SetWindowLong(IDETag, GWL_EXSTYLE, GetWindowLong(IDETag, GWL_EXSTYLE) | WS_EX_LAYERED);
-		SetLayeredWindowAttributes(IDETag, RGB(255, 255, 255), 255, LWA_COLORKEY | LWA_ALPHA);
+		SetWindowLong(cIDETag.mHwnd, GWL_EXSTYLE, GetWindowLong(cJPETag.mHwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+		SetLayeredWindowAttributes(cIDETag.mHwnd, RGB(255, 255, 255), 255, LWA_COLORKEY | LWA_ALPHA);
 
 		SetWindowPos(mBorder, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 		ShowWindow(GoBackButton, SW_HIDE);
@@ -858,6 +872,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msgID, WPARAM wParam, LPARAM lParam)
 		hFont = CreateFontA(23, 0, 0, 0, 600, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS, "等线");
 		hFont2 = CreateFontA(18, 0, 0, 0, 700, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS, "等线");
 		hFont3 = CreateFontA(15, 0, 0, 0, 700, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS, "等线");
+
+		cIDETag.SetFont(hFont2);
 		DJ = fopen("data\\data.json", "r");
 		if (0 != DJ) {
 			while (!feof(DJ))
@@ -885,13 +901,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msgID, WPARAM wParam, LPARAM lParam)
 			if (strlen(cJSON_GetObjectItem(DataJS, "JavaPath")->valuestring) == 0) {
 				WriteInJson("JavaPath", "");
 			}
-			JPEText = S2W(cJSON_GetObjectItem(DataJS, "JavaPath")->valuestring);
+			JPEText = S2WS(cJSON_GetObjectItem(DataJS, "JavaPath")->valuestring);
 		}
 		if (cJSON_GetObjectItem(DataJS, "UserName") != NULL) {
 			if (strlen(cJSON_GetObjectItem(DataJS, "UserName")->valuestring) == 0) {
 				WriteInJson("UserName", "Steve");
 			}
-			IDEText = S2W(cJSON_GetObjectItem(DataJS, "UserName")->valuestring);
+			IDEText = S2WS(cJSON_GetObjectItem(DataJS, "UserName")->valuestring);
 		}
 		free(DJString);
 		free(DJStringLine);
